@@ -1,13 +1,13 @@
 <template>
-  <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
+  <div class="flex min-h-screen bg-gray-100 dark:bg-gray-900">
     <!-- Sidebar -->
     <Sidebar />
     
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <Navbar />
-      <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800 p-6">
-        <div class="space-y-6">
+      <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+        <div class="max-w-screen-2xl mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
           <div class="flex justify-between items-center">
             <div>
               <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
@@ -25,8 +25,8 @@
             </button>
           </div>
 
-          <!-- Stats Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <!-- Overview Tiles -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             <StatCard
               icon="📈"
               title="Total Income"
@@ -38,6 +38,12 @@
               title="Total Expenses"
               :value="data.totalExpenses"
               color="bg-red-500"
+            />
+            <StatCard
+              icon="💳"
+              title="Total Balance"
+              :value="data.totalBalance"
+              color="bg-purple-500"
             />
             <StatCard
               icon="💵"
@@ -52,28 +58,7 @@
               color="bg-red-500"
             />
             <StatCard
-              icon="💳"
-              title="Total Balance"
-              :value="data.totalBalance"
-              color="bg-purple-500"
-            />
-          </div>
-
-          <!-- Budget Summary -->
-          <div v-if="budgetSummary.total_budgets > 0" class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <StatCard
-              icon="💼"
-              title="Total Budget"
-              :value="Number(budgetSummary.total_budget_amount || 0)"
-              color="bg-blue-500"
-            />
-            <StatCard
-              icon="💰"
-              title="Total Spent"
-              :value="Number(budgetSummary.total_spending || 0)"
-              color="bg-green-500"
-            />
-            <StatCard
+              v-if="budgetSummary.total_budgets > 0"
               icon="⚠️"
               title="Warnings"
               :value="budgetSummary.warning_count || 0"
@@ -81,6 +66,21 @@
               color="bg-yellow-500"
             />
             <StatCard
+              v-if="budgetSummary.total_budgets > 0"
+              icon="💼"
+              title="Total Budget"
+              :value="Number(budgetSummary.total_budget_amount || 0)"
+              color="bg-blue-500"
+            />
+            <StatCard
+              v-if="budgetSummary.total_budgets > 0"
+              icon="💰"
+              title="Total Spent"
+              :value="Number(budgetSummary.total_spending || 0)"
+              color="bg-green-500"
+            />
+            <StatCard
+              v-if="budgetSummary.total_budgets > 0"
               icon="🚨"
               title="Exceeded"
               :value="budgetSummary.exceeded_count || 0"
@@ -131,7 +131,7 @@
                 Create Account →
               </router-link>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <div v-if="accounts.length === 0" class="col-span-full text-center py-6 text-gray-500 dark:text-gray-400">
                 No accounts yet. Create an account to get started.
               </div>

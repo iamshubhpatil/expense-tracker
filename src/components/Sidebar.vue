@@ -1,12 +1,12 @@
 <template>
-  <div class="w-64 bg-lavender-50 dark:bg-gray-900 shadow-lg flex flex-col border-r border-lavender-200 dark:border-gray-700">
+  <div class="w-64 sticky top-0 h-screen bg-lavender-50 dark:bg-gray-900 shadow-lg flex flex-col justify-between border-r border-lavender-200 dark:border-gray-700">
     <!-- Logo -->
     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
       <h2 class="text-2xl font-bold text-lavender-600 dark:text-lavender-400">💰 Tracker</h2>
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 px-4 py-6 space-y-2">
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
       <router-link
         to="/dashboard"
         class="flex items-center space-x-3 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-lavender-50 dark:hover:bg-gray-800 hover:text-lavender-600 dark:hover:text-lavender-400 rounded-lg transition"
