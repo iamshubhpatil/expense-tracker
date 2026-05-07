@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm install",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
     "api/index.cjs": {
@@ -23,14 +23,14 @@
       "dest": "/index.html"
     }
   ],
-  "env": [
-    "DATABASE_URL",
-    "SUPABASE_DB_URL",
-    "SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY",
-    "JWT_SECRET",
-    "JWT_REFRESH_SECRET",
-    "JWT_EXPIRE",
-    "JWT_REFRESH_EXPIRE"
-  ]
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "SUPABASE_DB_URL": "@supabase_db_url",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_REFRESH_SECRET": "@jwt_refresh_secret",
+    "JWT_EXPIRE": "@jwt_expire",
+    "JWT_REFRESH_EXPIRE": "@jwt_refresh_expire"
+  }
 }
