@@ -1,2 +1,3 @@
 // Vercel serverless function entry point
-module.exports = require('./router.cjs');
+import apiRouter from './router.cjs' assert { type: 'commonjs' };
+export default apiRouter;
