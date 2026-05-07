@@ -63,76 +63,45 @@ async function getBudgetSummary(req, res) {
     const userId = req.user.id;
     const { month } = req.query;
 
-    let budgetWhereClause = 'user_id = $1 AND is_active = true';
-    const budgetParams = [userId];
-    let budgetParamIndex = 2;
+    let queryString = `
+      SELECT 
+        COUNT(*) AS total_budgets,
+        COALESCE(SUM(b.budget_amount), 0) AS total_budget_amount,
+        COALESCE(SUM(COALESCE(e_sum.total_spending, 0)), 0) AS total_spending,
+        COUNT(CASE WHEN COALESCE(e_sum.total_spending, 0) > b.budget_amount THEN 1 END) AS exceeded_count,
+        COUNT(CASE WHEN COALESCE(e_sum.total_spending, 0) >= (b.budget_amount * b.alert_threshold / 100)
+          AND COALESCE(e_sum.total_spending, 0) <= b.budget_amount THEN 1 END) AS warning_count
+      FROM budgets b
+      LEFT JOIN (
+        SELECT 
+          e.category_id,
+          SUM(e.amount) AS total_spending
+        FROM expenses e
+        WHERE e.user_id = $1 AND e.is_active = TRUE
+        AND DATE_TRUNC('month', e.expense_date) = DATE_TRUNC('month', $2::timestamp)
+        GROUP BY e.category_id
+      ) e_sum ON b.category_id = e_sum.category_id
+      WHERE b.user_id = $1
+    `;
+
+    const params = [userId, month || new Date().toISOString()];
 
     if (month) {
-      budgetWhereClause += ` AND TO_CHAR(month, 'YYYY-MM') = $${budgetParamIndex}`;
-      budgetParams.push(month);
-      budgetParamIndex++;
+      queryString += ` AND DATE_TRUNC('month', b.month::timestamp) = DATE_TRUNC('month', $${params.length}::timestamp)`;
+    } else {
+      queryString += ` AND DATE_TRUNC('month', b.month::timestamp) = DATE_TRUNC('month', CURRENT_TIMESTAMP)`;
     }
 
-    const budgetSummaryResult = await query(
-      `SELECT
-         COUNT(*) AS total_budgets,
-         COALESCE(SUM(budget_amount), 0) AS total_budget_amount
-       FROM budgets
-       WHERE ${budgetWhereClause}`,
-      budgetParams
-    );
-
-    // Get count of budgets with exceeded status (percentage > 100)
-    const exceededResult = await query(
-      `SELECT COUNT(DISTINCT ba.budget_id) AS exceeded_count
-       FROM budget_alerts ba
-       JOIN budgets b ON b.id = ba.budget_id
-       WHERE ba.user_id = $1
-         AND ba.alert_type = 'EXCEEDED'
-         AND ba.is_read = false
-         AND b.is_active = true${month ? ` AND TO_CHAR(b.month, 'YYYY-MM') = $2` : ''}`,
-      month ? [userId, month] : [userId]
-    );
-
-    // Get count of budgets with warning status (percentage >= threshold but <= 100)
-    const warningResult = await query(
-      `SELECT COUNT(DISTINCT ba.budget_id) AS warning_count
-       FROM budget_alerts ba
-       JOIN budgets b ON b.id = ba.budget_id
-       WHERE ba.user_id = $1
-         AND ba.alert_type = 'WARNING'
-         AND ba.is_read = false
-         AND b.is_active = true${month ? ` AND TO_CHAR(b.month, 'YYYY-MM') = $2` : ''}`,
-      month ? [userId, month] : [userId]
-    );
-
-    // Get total spending tied to active budgets so it compares correctly with total budget amount.
-    const spendingResult = await query(
-      `WITH budget_spending AS (
-         SELECT b.id AS budget_id,
-                COALESCE(SUM(e.amount), 0) AS current_spending
-         FROM budgets b
-         LEFT JOIN expenses e ON e.user_id = b.user_id
-           AND e.category_id = b.category_id
-           AND e.is_active = true
-           AND DATE_TRUNC('month', e.expense_date) = DATE_TRUNC('month', b.month::timestamp)
-         WHERE b.user_id = $1
-           AND b.is_active = true${month ? ` AND TO_CHAR(b.month, 'YYYY-MM') = $2` : ''}
-         GROUP BY b.id
-       )
-       SELECT COALESCE(SUM(current_spending), 0) AS total_spending
-       FROM budget_spending`,
-      month ? [userId, month] : [userId]
-    );
+    const result = await query(queryString, params);
 
     res.json({
       success: true,
-      data: {
-        total_budgets: Number(budgetSummaryResult.rows[0].total_budgets),
-        total_budget_amount: Number(budgetSummaryResult.rows[0].total_budget_amount),
-        total_spending: Number(spendingResult.rows[0].total_spending),
-        warning_count: Number(warningResult.rows[0].warning_count),
-        exceeded_count: Number(exceededResult.rows[0].exceeded_count),
+      data: result.rows[0] || {
+        total_budgets: 0,
+        total_budget_amount: 0,
+        total_spending: 0,
+        exceeded_count: 0,
+        warning_count: 0,
       },
     });
   } catch (error) {

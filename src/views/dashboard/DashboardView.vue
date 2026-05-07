@@ -205,7 +205,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import Sidebar from '@/components/Sidebar.vue'
 import Navbar from '@/components/Navbar.vue'
 import StatCard from '@/components/StatCard.vue'
@@ -271,20 +271,25 @@ const fetchDashboardData = async () => {
   }
 }
 
+const handleAlertUpdates = () => {
+  fetchDashboardData()
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    fetchDashboardData()
+  }
+}
+
 onMounted(() => {
   loadAccountTypes()
   fetchDashboardData()
-
-  // Refetch when page becomes visible
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      fetchDashboardData()
-    }
-  }
-
   document.addEventListener('visibilitychange', handleVisibilityChange)
-  return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }
+  window.addEventListener('budget-alerts-updated', handleAlertUpdates)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  window.removeEventListener('budget-alerts-updated', handleAlertUpdates)
 })
 </script>

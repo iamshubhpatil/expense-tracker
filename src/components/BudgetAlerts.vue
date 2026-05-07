@@ -164,6 +164,7 @@ export default {
           await apiClient.put(`/budgets/alerts/${alert.id}/read`);
           await this.fetchAlerts();
           this.unreadCount = this.alerts.filter((a) => !a.is_read).length;
+          window.dispatchEvent(new CustomEvent('budget-alerts-updated'));
         } catch (error) {
           console.error('Error marking alert as read:', error);
         }
@@ -175,6 +176,7 @@ export default {
         this.alerts = [];
         this.unreadCount = 0;
         await this.fetchAlerts();
+        window.dispatchEvent(new CustomEvent('budget-alerts-updated'));
         this.showDropdown = false;
       } catch (error) {
         console.error('Error marking alerts as read:', error);

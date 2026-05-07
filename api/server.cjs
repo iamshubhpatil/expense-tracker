@@ -1,8 +1,9 @@
 const http = require('http');
+const path = require('path');
 const dotenv = require('dotenv');
 const apiRouter = require('./router.cjs');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Ensure development mode for local testing
 if (!process.env.NODE_ENV) {
