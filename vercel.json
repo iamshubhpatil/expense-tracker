@@ -22,15 +22,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "SUPABASE_DB_URL": "@supabase_db_url",
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "JWT_SECRET": "@jwt_secret",
-    "JWT_REFRESH_SECRET": "@jwt_refresh_secret",
-    "JWT_EXPIRE": "@jwt_expire",
-    "JWT_REFRESH_EXPIRE": "@jwt_refresh_expire"
-  }
+  ]
 }
