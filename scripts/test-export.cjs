@@ -2,7 +2,7 @@
  * Test script to verify the export endpoint works with a valid Supabase JWT
  * 
  * Usage:
- *   node test-export.cjs <userId>
+ *   node scripts/test-export.cjs <userId>
  * 
  * This script:
  * 1. Generates a valid Supabase JWT token using your service role key
@@ -53,8 +53,8 @@ function generateTestJWT(userId, expiresIn = 3600) {
 async function testExport() {
   const userId = process.argv[2];
   if (!userId) {
-    console.error('❌ Usage: node test-export.cjs <userId>');
-    console.error('   Example: node test-export.cjs a4a8b75d-8f4b-4ffb-bbe3-a8ba05051dd9');
+    console.error('❌ Usage: node scripts/test-export.cjs <userId>');
+    console.error('   Example: node scripts/test-export.cjs a4a8b75d-8f4b-4ffb-bbe3-a8ba05051dd9');
     process.exit(1);
   }
 

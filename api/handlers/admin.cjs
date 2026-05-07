@@ -49,6 +49,16 @@ async function getUserDetails(req, res) {
       [userId]
     );
 
+    const recentExpenses = await query(
+      `SELECT description, amount, expense_date as date, c.name as category_name
+       FROM expenses e
+       LEFT JOIN expense_categories c ON e.category_id = c.id
+       WHERE e.user_id = $1 AND e.is_active = true
+       ORDER BY e.expense_date DESC
+       LIMIT 5`,
+      [userId]
+    );
+
     res.json({
       success: true,
       data: {
@@ -59,6 +69,7 @@ async function getUserDetails(req, res) {
           transfersCount: Number(summaryResult.rows[0].transfers_count),
           accountsCount: Number(summaryResult.rows[0].accounts_count),
         },
+        expenses: recentExpenses.rows,
       },
     });
   } catch (error) {
@@ -190,7 +201,7 @@ async function resetUserPassword(req, res) {
 
 async function getAllExpenses(req, res) {
   try {
-    const { userId, page = 0, limit = 20 } = req.query;
+    const { userId, page = 0, limit = 1000 } = req.query;
 
     let whereClause = 'e.is_active = true';
     const params = [];
@@ -242,7 +253,7 @@ async function getAllExpenses(req, res) {
 
 async function getAllIncome(req, res) {
   try {
-    const { userId, page = 0, limit = 20 } = req.query;
+    const { userId, page = 0, limit = 1000 } = req.query;
 
     let whereClause = 'i.is_active = true';
     const params = [];
@@ -294,7 +305,7 @@ async function getAllIncome(req, res) {
 
 async function getAllTransfers(req, res) {
   try {
-    const { page = 0, limit = 20 } = req.query;
+    const { page = 0, limit = 1000 } = req.query;
     const offset = parseInt(page) * parseInt(limit);
 
     const result = await query(
@@ -408,10 +419,23 @@ async function getStats(req, res) {
     const incomeSum = await query('SELECT COALESCE(SUM(amount), 0) as total FROM incomes WHERE is_active = true');
     const transferSum = await query('SELECT COALESCE(SUM(amount), 0) as total FROM transfers');
 
+    // Active users in last 30 days (users with recent transactions or recently created)
+    const activeUsersResult = await query(`
+      SELECT COUNT(DISTINCT u.id) as active
+      FROM users u
+      LEFT JOIN expenses e ON u.id = e.user_id AND e.expense_date >= CURRENT_DATE - INTERVAL '30 days' AND e.is_active = true
+      LEFT JOIN incomes i ON u.id = i.user_id AND i.income_date >= CURRENT_DATE - INTERVAL '30 days' AND i.is_active = true
+      WHERE u.is_active = true AND u.email_verified = true
+      AND (e.id IS NOT NULL OR i.id IS NOT NULL OR u.created_at >= CURRENT_DATE - INTERVAL '30 days')
+    `);
+
     res.json({
       success: true,
       data: {
-        users: { total: Number(usersResult.rows[0].total_users) },
+        users: { 
+          total: Number(usersResult.rows[0].total_users),
+          activeInLastMonth: Number(activeUsersResult.rows[0].active)
+        },
         transactions: {
           expenses: Number(expensesCount.rows[0].total),
           income: Number(incomeCount.rows[0].total),

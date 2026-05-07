@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "node api/server.cjs",
+    "test:get-user": "node scripts/get-test-user.cjs",
+    "test:api": "NODE_ENV=development node scripts/test-api.cjs",
+    "test:export": "node scripts/test-export.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"

@@ -2,7 +2,7 @@
  * Helper to get a valid user ID from the database for testing
  * 
  * Usage:
- *   node get-test-user.cjs
+ *   node scripts/get-test-user.cjs
  */
 
 require('dotenv').config();
@@ -50,7 +50,7 @@ async function getTestUser() {
     const testUser = result.rows[0];
     console.log(`✅ Recommended test user: ${testUser.id}\n`);
     console.log(`🔧 Run this to test the export:\n`);
-    console.log(`   node test-export.cjs ${testUser.id}\n`);
+    console.log(`   node scripts/test-export.cjs ${testUser.id}\n`);
 
   } catch (error) {
     console.error('❌ Database error:', error.message);

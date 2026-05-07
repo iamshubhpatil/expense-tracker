@@ -127,8 +127,6 @@
                       <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Name</th>
                       <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Role</th>
                       <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                      <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Transactions</th>
-                      <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Accounts</th>
                       <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Joined</th>
                       <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                     </tr>
@@ -147,8 +145,6 @@
                           {{ user.is_active ? 'Active' : 'Inactive' }}
                         </span>
                       </td>
-                      <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ user.stats?.expenses + user.stats?.income || 0 }}</td>
-                      <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ user.stats?.accounts || 0 }}</td>
                       <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ formatDate(user.created_at) }}</td>
                       <td class="px-6 py-4 text-sm">
                         <div class="flex flex-wrap gap-2">
