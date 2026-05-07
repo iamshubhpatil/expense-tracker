@@ -1,2 +1,2 @@
 // Vercel serverless function entry point
-module.exports = require('./index.cjs');
+module.exports = require('./router.cjs');
