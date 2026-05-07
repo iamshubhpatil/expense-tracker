@@ -15,10 +15,18 @@ const apiClient = axios.create({
 
 // Request interceptor to add token from Supabase session
 apiClient.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session?.access_token) {
-    config.headers = config.headers || {}
-    config.headers.Authorization = `Bearer ${session.access_token}`
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    console.log('[api.js] Session available:', !!session, 'Has token:', !!session?.access_token)
+    if (session?.access_token) {
+      config.headers = config.headers || {}
+      config.headers.Authorization = `Bearer ${session.access_token}`
+      console.log('[api.js] Authorization header set:', config.headers.Authorization ? 'yes' : 'no')
+    } else {
+      console.log('[api.js] No session or access_token found')
+    }
+  } catch (error) {
+    console.error('[api.js] Error getting session:', error.message)
   }
   return config
 })

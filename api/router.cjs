@@ -69,9 +69,12 @@ async function apiRouter(req, res) {
     const { path, query } = parseUrl(req.url);
     const queryParams = getQueryParams(query);
     const method = req.method.toUpperCase();
+    
+    console.log(`[router] ${method} ${path}`);
 
     // Attach query params to request
     req.query = queryParams;
+
 
     // Add response helpers
     res.json = (data, statusCode = 200) => {
@@ -288,6 +291,7 @@ async function apiRouter(req, res) {
       return;
     }
     if (path === '/api/budgets/alerts/mark-all/read' && method === 'PUT') {
+      console.log('[router] Mark all alerts read route hit');
       await authenticate(req, res, () => budgetsHandlers.markAllAlertsRead(req, res));
       return;
     }

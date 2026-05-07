@@ -281,7 +281,7 @@ async function markAlertRead(req, res) {
 async function markAllAlertsRead(req, res) {
   try {
     const userId = req.user.id;
-    console.log('[markAllAlertsRead] Marking all alerts as read for user:', userId);
+    console.log('[markAllAlertsRead] Starting for user:', userId);
 
     const updateResult = await query(
       'UPDATE budget_alerts SET is_read = true, updated_at = NOW() WHERE user_id = $1 RETURNING id',
