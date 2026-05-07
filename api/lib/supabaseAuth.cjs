@@ -98,10 +98,20 @@ async function ensureLocalUser(supabaseUser) {
   }
 
   const userId = supabaseUser.id;
-  const existing = await query(
-    'SELECT id, email, first_name, last_name, role, email_verified, is_active FROM users WHERE id = $1',
-    [userId]
-  );
+  console.log('[ensureLocalUser] Checking for existing user:', userId);
+  
+  let existing;
+  try {
+    existing = await query(
+      'SELECT id, email, first_name, last_name, role, email_verified, is_active FROM users WHERE id = $1',
+      [userId]
+    );
+    console.log('[ensureLocalUser] Query successful, found:', existing.rows.length, 'user(s)');
+  } catch (error) {
+    console.error('[ensureLocalUser] Database query failed:', error.message);
+    console.error('[ensureLocalUser] Error code:', error.code);
+    throw error;
+  }
 
   if (existing.rows[0]) {
     const hasExpenseCategories = await query(

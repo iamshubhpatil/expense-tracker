@@ -29,11 +29,22 @@ function getPool() {
 }
 
 async function query(text, params) {
-  const client = await getPool().connect();
   try {
-    return await client.query(text, params);
-  } finally {
-    client.release();
+    const client = await getPool().connect();
+    try {
+      console.log('[database] Executing query:', text.substring(0, 50) + '...');
+      const result = await client.query(text, params);
+      console.log('[database] Query successful, rows:', result.rows.length);
+      return result;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('[database] Connection/Query error:', error.code, error.message);
+    const dbUrl = process.env.DATABASE_URL;
+    const host = dbUrl ? dbUrl.split('@')[1]?.split(':')[0] : 'unknown';
+    console.error('[database] Attempting to connect to:', host);
+    throw error;
   }
 }
 
