@@ -2,7 +2,7 @@
   "name": "expense-tracker-frontend-vue",
   "version": "1.0.0",
   "description": "Personal Expense Tracker Frontend - Vue.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
     "dev:api": "node api/server.cjs",
