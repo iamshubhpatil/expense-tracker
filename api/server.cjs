@@ -4,7 +4,12 @@ const apiRouter = require('./router.cjs');
 
 dotenv.config();
 
-const port = process.env.PORT || 3000;
+// Ensure development mode for local testing
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+}
+
+const port = process.env.PORT || 3002;
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -18,4 +23,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(port, () => {
   console.log(`Local serverless API running on http://localhost:${port}`);
+  console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
 });

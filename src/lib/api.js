@@ -16,8 +16,18 @@ const apiClient = axios.create({
 // Request interceptor to add token from Supabase session
 apiClient.interceptors.request.use(async (config) => {
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    let { data: { session } } = await supabase.auth.getSession()
     console.log('[api.js] Session available:', !!session, 'Has token:', !!session?.access_token)
+
+    if (!session?.access_token && typeof supabase.auth.refreshSession === 'function') {
+      const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError) {
+        console.error('[api.js] Session refresh failed:', refreshError.message)
+      }
+      session = refreshed?.session || session
+      console.log('[api.js] Session refreshed:', !!session?.access_token)
+    }
+
     if (session?.access_token) {
       config.headers = config.headers || {}
       config.headers.Authorization = `Bearer ${session.access_token}`
@@ -35,7 +45,8 @@ apiClient.interceptors.request.use(async (config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status
+    if (status === 401 || status === 403) {
       supabase.auth.signOut()
       window.location.href = '/login'
     }

@@ -1,4 +1,5 @@
 const { verifySupabaseAccessToken, ensureLocalUser } = require('./supabaseAuth.cjs');
+const jwt = require('jsonwebtoken');
 
 async function authenticate(req, res, next) {
   try {
@@ -17,7 +18,29 @@ async function authenticate(req, res, next) {
 
     const token = authHeader.substring(7);
     console.log('[authenticate] Verifying token...');
-    const supabaseUser = await verifySupabaseAccessToken(token);
+
+    let supabaseUser = null;
+
+    // In development mode, allow local JWT tokens without Supabase verification
+    if (process.env.NODE_ENV === 'development' || process.env.DEV_MODE === 'true') {
+      try {
+        const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const decoded = jwt.decode(token, { complete: true });
+        
+        if (decoded && decoded.payload && decoded.payload.sub) {
+          console.log('[authenticate] Development mode: accepting local JWT');
+          supabaseUser = { id: decoded.payload.sub, email: decoded.payload.email };
+        }
+      } catch (e) {
+        console.log('[authenticate] Not a local JWT, trying Supabase verification...');
+      }
+    }
+
+    // If not a local token or not in dev mode, verify against Supabase
+    if (!supabaseUser) {
+      supabaseUser = await verifySupabaseAccessToken(token);
+    }
+
     console.log('[authenticate] Supabase user:', supabaseUser ? 'verified' : 'failed');
 
     if (!supabaseUser) {

@@ -120,7 +120,13 @@ async function getCategoryReport(req, res) {
          LEFT JOIN expenses e ON e.category_id = c.id AND e.user_id = $1 AND e.is_active = true ${expenseFilter}
          WHERE c.user_id = $1 AND c.is_active = true
          GROUP BY c.id, c.name, c.icon, c.color
+         HAVING SUM(e.amount) > 0
        ) as expense_categories
+       UNION ALL
+       SELECT NULL as id, 'Uncategorized' as name, NULL as icon, '#757575' as color, 'expense' as type, COALESCE(SUM(e.amount), 0) as total
+       FROM expenses e
+       WHERE e.category_id IS NULL AND e.user_id = $1 AND e.is_active = true ${expenseFilter}
+       HAVING SUM(e.amount) > 0
        UNION ALL
        SELECT id, name, icon, color, 'income' as type, COALESCE(total, 0) as total
        FROM (
@@ -129,14 +135,30 @@ async function getCategoryReport(req, res) {
          LEFT JOIN incomes i ON i.category_id = c.id AND i.user_id = $1 AND i.is_active = true ${incomeFilter}
          WHERE c.user_id = $1 AND c.is_active = true
          GROUP BY c.id, c.name, c.icon, c.color
+         HAVING SUM(i.amount) > 0
        ) as income_categories
+       UNION ALL
+       SELECT NULL as id, 'Uncategorized' as name, NULL as icon, '#757575' as color, 'income' as type, COALESCE(SUM(i.amount), 0) as total
+       FROM incomes i
+       WHERE i.category_id IS NULL AND i.user_id = $1 AND i.is_active = true ${incomeFilter}
+       HAVING SUM(i.amount) > 0
        ORDER BY total DESC`,
       params
     );
 
+    // Calculate totals
+    const totalExpenses = result.rows
+      .filter(r => r.type === 'expense')
+      .reduce((sum, r) => sum + parseFloat(r.total || 0), 0);
+    const totalIncome = result.rows
+      .filter(r => r.type === 'income')
+      .reduce((sum, r) => sum + parseFloat(r.total || 0), 0);
+
     res.json({
       success: true,
       data: result.rows,
+      totalExpenses,
+      totalIncome,
     });
   } catch (error) {
     console.error('Get reports categories error:', error);
@@ -344,58 +366,110 @@ async function exportDataToCSV(req, res) {
     const userId = req.user.id;
     const { startDate, endDate, type = 'all' } = req.query;
 
-    let whereClause = 'e.user_id = $1 AND e.is_active = true';
-    const params = [userId];
-    let paramIndex = 2;
+    const buildFilter = (alias, dateField) => {
+      const conditions = [`${alias}.user_id = $1`, `${alias}.is_active = true`];
+      const params = [userId];
+      let idx = 2;
 
-    if (startDate) {
-      whereClause += ` AND e.expense_date >= $${paramIndex}::date`;
-      params.push(startDate);
-      paramIndex++;
+      if (startDate) {
+        const parsedStart = new Date(startDate);
+        if (Number.isNaN(parsedStart.getTime())) {
+          return { valid: false, status: 400, message: 'Invalid startDate format' };
+        }
+        conditions.push(`${alias}.${dateField} >= $${idx}::date`);
+        params.push(startDate);
+        idx++;
+      }
+
+      if (endDate) {
+        const parsedEnd = new Date(endDate);
+        if (Number.isNaN(parsedEnd.getTime())) {
+          return { valid: false, status: 400, message: 'Invalid endDate format' };
+        }
+        conditions.push(`${alias}.${dateField} <= $${idx}::date`);
+        params.push(endDate);
+        idx++;
+      }
+
+      return { valid: true, clause: conditions.join(' AND '), params };
+    };
+
+    const rows = [];
+    const headerRow = ['Type', 'Date', 'Description', 'Category', 'Account', 'Amount'];
+
+    if (type === 'all' || type === 'expenses') {
+      const expenseFilter = buildFilter('e', 'expense_date');
+      if (!expenseFilter.valid) {
+        return res.status(expenseFilter.status).json({ success: false, message: expenseFilter.message });
+      }
+
+      const expenseResult = await query(
+        `SELECT e.id, e.description, e.amount, e.expense_date AS date,
+                c.name AS category, a.name AS account
+         FROM expenses e
+         LEFT JOIN expense_categories c ON e.category_id = c.id
+         LEFT JOIN accounts a ON e.account_id = a.id
+         WHERE ${expenseFilter.clause}
+         ORDER BY e.expense_date DESC`,
+        expenseFilter.params
+      );
+
+      rows.push(...expenseResult.rows.map(row => ({
+        Type: 'Expense',
+        Date: row.date,
+        Description: row.description || '',
+        Category: row.category || '',
+        Account: row.account || '',
+        Amount: row.amount,
+      })));
     }
 
-    if (endDate) {
-      whereClause += ` AND e.expense_date <= $${paramIndex}::date`;
-      params.push(endDate);
-      paramIndex++;
+    if (type === 'all' || type === 'income') {
+      const incomeFilter = buildFilter('i', 'income_date');
+      if (!incomeFilter.valid) {
+        return res.status(incomeFilter.status).json({ success: false, message: incomeFilter.message });
+      }
+
+      const incomeResult = await query(
+        `SELECT i.id, i.description, i.amount, i.income_date AS date,
+                c.name AS category, a.name AS account
+         FROM incomes i
+         LEFT JOIN income_categories c ON i.category_id = c.id
+         LEFT JOIN accounts a ON i.account_id = a.id
+         WHERE ${incomeFilter.clause}
+         ORDER BY i.income_date DESC`,
+        incomeFilter.params
+      );
+
+      rows.push(...incomeResult.rows.map(row => ({
+        Type: 'Income',
+        Date: row.date,
+        Description: row.description || '',
+        Category: row.category || '',
+        Account: row.account || '',
+        Amount: row.amount,
+      })));
     }
 
-    const result = await query(
-      `SELECT e.id, e.description, e.amount, e.expense_date AS date, 
-              c.name AS category, a.account_name AS account
-       FROM expenses e
-       LEFT JOIN expense_categories c ON e.category_id = c.id
-       LEFT JOIN accounts a ON e.account_id = a.id
-       WHERE ${whereClause}
-       ORDER BY e.expense_date DESC`,
-      params
-    );
-
-    if (!result.rows || result.rows.length === 0) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        success: false,
-        message: 'No data to export',
-      }));
-      return;
+    const csvRows = [headerRow];
+    for (const row of rows) {
+      const csvDate = row.Date ? new Date(row.Date).toISOString().split('T')[0] : '';
+      csvRows.push([
+        row.Type,
+        csvDate,
+        `"${row.Description.replace(/"/g, '""')}"`,
+        `"${row.Category.replace(/"/g, '""')}"`,
+        `"${row.Account.replace(/"/g, '""')}"`,
+        row.Amount,
+      ].join(','));
     }
 
-    // Generate CSV content
-    const headers = ['Date', 'Description', 'Category', 'Account', 'Amount'];
-    const csvContent = [
-      headers.join(','),
-      ...result.rows.map(row => [
-        new Date(row.date).toISOString().split('T')[0],
-        `"${(row.description || '').replace(/"/g, '""')}"`,
-        row.category || '',
-        row.account || '',
-        row.amount
-      ].join(','))
-    ].join('\n');
+    const csvContent = csvRows.join('\n');
+    const filename = `export_${new Date().toISOString().split('T')[0]}.csv`;
 
     res.writeHead(200, {
       'Content-Type': 'text/csv',
-      'Content-Disposition': `attachment; filename="export_${new Date().toISOString().split('T')[0]}.csv"`,
+      'Content-Disposition': `attachment; filename="${filename}"`,
     });
     res.end(csvContent);
   } catch (error) {

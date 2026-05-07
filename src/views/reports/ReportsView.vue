@@ -372,15 +372,18 @@ const generateReports = async () => {
       categories = categories.filter((cat) => cat.type === 'income')
     }
 
-    let totalIncome = 0
-    let totalExpenses = 0
+    let totalIncome = categoriesRes.data.totalIncome || 0
+    let totalExpenses = categoriesRes.data.totalExpenses || 0
+
+    if (filters.value.type === 'expenses') {
+      totalIncome = 0
+    } else if (filters.value.type === 'income') {
+      totalExpenses = 0
+    }
 
     // Separate and process expenses by category
     const expenses = categories.filter((cat) => cat.type === 'expense')
-    const totalExp = expenses.reduce((sum, cat) => {
-      const catTotal = typeof cat.total === 'string' ? parseFloat(cat.total) : cat.total || 0
-      return sum + catTotal
-    }, 0)
+    const totalExp = totalExpenses
 
     expensesByCategory.value = expenses
       .map((cat) => {
@@ -396,10 +399,7 @@ const generateReports = async () => {
 
     // Separate and process income by category
     const incomes = categories.filter((cat) => cat.type === 'income')
-    const totalInc = incomes.reduce((sum, cat) => {
-      const catTotal = typeof cat.total === 'string' ? parseFloat(cat.total) : cat.total || 0
-      return sum + catTotal
-    }, 0)
+    const totalInc = totalIncome
 
     incomeByCategory.value = incomes
       .map((cat) => {
@@ -413,8 +413,7 @@ const generateReports = async () => {
       })
       .sort((a, b) => b.total - a.total)
 
-    totalExpenses = totalExp
-    totalIncome = totalInc
+    // totalExpenses and totalIncome already set above
 
     // Process budget comparison data
     const budgetData = budgetRes.data.data || []
