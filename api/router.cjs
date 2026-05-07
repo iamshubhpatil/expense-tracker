@@ -106,11 +106,23 @@ async function apiRouter(req, res) {
 
     // Health check
     if (path === '/api/health' && method === 'GET') {
-      return res.json({
+      return res.writeHead(200, { 'Content-Type': 'application/json' }), res.end(JSON.stringify({
         status: 'OK',
         message: 'API is running',
         timestamp: new Date().toISOString(),
-      });
+      }));
+    }
+
+    // Debug endpoint - check environment variables
+    if (path === '/api/debug' && method === 'GET') {
+      return res.writeHead(200, { 'Content-Type': 'application/json' }), res.end(JSON.stringify({
+        message: 'Environment variables check',
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        nodeEnv: process.env.NODE_ENV,
+        timestamp: new Date().toISOString(),
+      }));
     }
 
     // Auth routes (public)

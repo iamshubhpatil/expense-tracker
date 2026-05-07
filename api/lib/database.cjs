@@ -12,9 +12,12 @@ function getPool() {
 
     pool = new Pool({
       connectionString: databaseUrl,
-      max: 20,
+      max: 10, // Reduced for serverless
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 10000, // Increased timeout
+      ssl: {
+        rejectUnauthorized: false, // Allow self-signed certificates
+      },
     });
 
     pool.on('error', (err) => {
